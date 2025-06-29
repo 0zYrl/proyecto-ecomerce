@@ -15,20 +15,52 @@ export default function CartPage() {
   const router = useRouter();
 
   useEffect(() => {
-    try {
-      const storedCart = JSON.parse(localStorage.getItem('cart') || '[]');
-      setCart(storedCart);
-    } catch (error) {
-      console.error('Error al leer el carrito:', error);
-      setCart([]);
-    }
+    const storedCart = JSON.parse(localStorage.getItem('cart') || '[]');
+    setCart(storedCart);
   }, []);
 
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-  const finalizarCompra = () => {
-    localStorage.removeItem('cart');
-    router.push('/checkout/success');
+  const finalizarCompra = async () => {
+    const token = localStorage.getItem('token'); // Asegúrate de guardar el token al hacer login
+
+    if (!token) {
+      alert('Debes iniciar sesión para comprar');
+      return;
+    }
+
+    try {
+      const response = await fetch('http://localhost:5000/orders/checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          // Enviar productos con id y cantidad
+          items: cart.map(item => ({
+            productId: item.id,
+            quantity: item.quantity
+          }))
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.error || 'Error al procesar la compra');
+        return;
+      }
+
+      alert('✅ ¡Compra realizada con éxito!');
+      localStorage.removeItem('cart');
+      setCart([]);
+      router.push('/orders'); // o donde quieras redirigir al usuario
+
+    } catch (err) {
+      console.error('Error al finalizar compra:', err);
+      alert('Ocurrió un error inesperado');
+    }
   };
 
   return (
@@ -47,8 +79,8 @@ export default function CartPage() {
           </ul>
           <p className="mt-4 font-bold">Total: ${total.toFixed(2)}</p>
           <button
-            className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
             onClick={finalizarCompra}
+            className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
           >
             Finalizar compra
           </button>
