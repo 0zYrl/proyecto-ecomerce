@@ -7,9 +7,8 @@ const isAdmin = require('../middlewares/isAdmin');
 const router = express.Router();
 
 router.post('/register', register);
-router.post('/login', login);
+router.post('/login', login);  // aquí usamos login
 
-// Solo un admin puede cambiar roles
 router.put('/role/:userId', verifyToken, isAdmin, updateUserRole);
 
 module.exports = router;

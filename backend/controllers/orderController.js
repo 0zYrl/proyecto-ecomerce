@@ -1,3 +1,5 @@
+const { pool } = require('../models/orderModel');
+
 const createOrderFromCart = async (req, res) => {
   const userId = req.user.id;
 
@@ -65,4 +67,64 @@ const createOrderFromCart = async (req, res) => {
     console.error('❌ Error en createOrderFromCart:', err);
     res.status(500).json({ error: 'Error al crear la orden' });
   }
+};
+
+const getUserOrders = async (req, res) => {
+  const userId = req.user.id;
+
+  try {
+    const orders = await pool.query(`
+      SELECT o.id, o.total, o.created_at, json_agg(
+        json_build_object(
+          'name', p.name,
+          'price', oi.price,
+          'quantity', oi.quantity,
+          'image', p.image
+        )
+      ) AS items
+      FROM orders o
+      JOIN order_items oi ON o.id = oi.order_id
+      JOIN products p ON oi.product_id = p.id
+      WHERE o.user_id = $1
+      GROUP BY o.id
+      ORDER BY o.created_at DESC
+    `, [userId]);
+
+    res.json(orders.rows);
+  } catch (err) {
+    console.error('❌ Error en getUserOrders:', err);
+    res.status(500).json({ error: 'Error al obtener órdenes' });
+  }
+};
+
+const getAllOrders = async (req, res) => {
+  try {
+    const orders = await pool.query(`
+      SELECT o.id, o.total, o.created_at, u.name AS user_name, u.email, json_agg(
+        json_build_object(
+          'name', p.name,
+          'price', oi.price,
+          'quantity', oi.quantity,
+          'image', p.image
+        )
+      ) AS items
+      FROM orders o
+      JOIN users u ON o.user_id = u.id
+      JOIN order_items oi ON o.id = oi.order_id
+      JOIN products p ON oi.product_id = p.id
+      GROUP BY o.id, u.name, u.email
+      ORDER BY o.created_at DESC
+    `);
+
+    res.json(orders.rows);
+  } catch (err) {
+    console.error('❌ Error en getAllOrders:', err);
+    res.status(500).json({ error: 'Error al obtener todas las órdenes' });
+  }
+};
+
+module.exports = {
+  createOrderFromCart,
+  getUserOrders,
+  getAllOrders,
 };

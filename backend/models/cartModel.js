@@ -1,5 +1,25 @@
 const pool = require('../config/db');
 
+const createCartTables = async () => {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS carts (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE
+    );
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS cart_items (
+      id SERIAL PRIMARY KEY,
+      cart_id INTEGER REFERENCES carts(id) ON DELETE CASCADE,
+      product_id INTEGER REFERENCES products(id),
+      quantity INTEGER NOT NULL
+    );
+  `);
+
+  console.log('✅ Tablas "carts" y "cart_items" listas.');
+};
+
 const getOrCreateCart = async (userId) => {
   const existing = await pool.query(
     'SELECT id FROM carts WHERE user_id = $1 LIMIT 1',
@@ -70,6 +90,7 @@ const removeItem = async (userId, productId) => {
 
 module.exports = {
   pool,
+  createCartTables,
   getOrCreateCart,
   addToCart,
   getCartItems,

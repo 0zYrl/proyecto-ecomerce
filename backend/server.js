@@ -5,7 +5,7 @@ const authRoutes = require('./routes/authRoutes');
 const productRoutes = require('./routes/productRoutes');
 const cartRoutes = require('./routes/cartRoutes');
 const orderRoutes = require('./routes/orderRoutes');
-
+const userRoutes = require('./routes/userRoutes');
 
 dotenv.config();
 
@@ -18,7 +18,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
-
+app.use('/api/users', userRoutes);
 
 // Ruta de prueba
 app.get('/', (req, res) => {
@@ -26,23 +26,25 @@ app.get('/', (req, res) => {
 });
 
 const { createUsersTable } = require('./models/userModel');
-createUsersTable();
-
 const { createProductsTable } = require('./models/productModel');
-createProductsTable();
-
-const userRoutes = require('./routes/userRoutes');
-app.use('/api/users', userRoutes);
-
 const { createCartTables } = require('./models/cartModel');
-//createCartTables();
-
 const { createOrderTables } = require('./models/orderModel');
-createOrderTables();
 
-
-// Puerto
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Servidor corriendo en puerto ${PORT}`);
-});
+
+const startServer = async () => {
+  try {
+    await createUsersTable();
+    await createProductsTable();
+    await createCartTables();
+    await createOrderTables();
+
+    app.listen(PORT, () => {
+      console.log(`Servidor corriendo en puerto ${PORT}`);
+    });
+  } catch (error) {
+    console.error('Error creando tablas o iniciando servidor:', error);
+  }
+};
+
+startServer();
